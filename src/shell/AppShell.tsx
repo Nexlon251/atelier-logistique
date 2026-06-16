@@ -20,6 +20,7 @@ import { StockScreen } from '../screens/StockScreen';
 import { OrganizationScreen } from '../screens/OrganizationScreen';
 import { SubscriptionScreen } from '../screens/SubscriptionScreen';
 import { LoadingOverlay, ToastBar } from '../components/ui/index';
+import { BillingGuard } from '../components/BillingGuard';
 import { COLORS, SHADOW, RADIUS, SPACING } from '../components/ui/theme';
 import type { AppScreen } from '../types';
 
@@ -79,15 +80,42 @@ export function AppShell() {
       <View style={styles.content}>
         {screen === 'login' && <LoginScreen />}
         {screen === 'onboarding' && <OnboardingScreen />}
-        {screen === 'home' && <HomeScreen />}
-        {screen === 'tasks' && <TasksScreen />}
-        {screen === 'enterprise' && <EnterpriseScreen />}
-        {screen === 'documents' && <DocumentsScreen />}
-        {screen === 'stock' && <StockScreen />}
-        {screen === 'calendar' && <CalendarScreen />}
-        {screen === 'stats' && <StatsScreen />}
+        {screen === 'home' && (
+          <BillingGuard organization={organization}>
+            <HomeScreen />
+          </BillingGuard>
+        )}
+        {screen === 'tasks' && (
+          <BillingGuard organization={organization}>
+            <TasksScreen />
+          </BillingGuard>
+        )}
+        {screen === 'enterprise' && (
+          <BillingGuard organization={organization}>
+            <EnterpriseScreen />
+          </BillingGuard>
+        )}
+        {screen === 'documents' && (
+          <BillingGuard organization={organization}>
+            <DocumentsScreen />
+          </BillingGuard>
+        )}
+        {screen === 'stock' && (
+          <BillingGuard organization={organization}>
+            <StockScreen />
+          </BillingGuard>
+        )}
+        {screen === 'calendar' && (
+          <BillingGuard organization={organization}>
+            <CalendarScreen />
+          </BillingGuard>
+        )}
+        {screen === 'stats' && (
+          <BillingGuard organization={organization}>
+            <StatsScreen />
+          </BillingGuard>
+        )}
         {screen === 'organization' && <OrganizationScreen />}
-        {billingBlocked && <SubscriptionScreen />}
       </View>
 
       {/* Toast stack */}

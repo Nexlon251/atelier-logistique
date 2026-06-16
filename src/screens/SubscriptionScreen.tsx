@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/index';
 import { COLORS, RADIUS, SPACING, SHADOW } from '../components/ui/theme';
+import { openPortal, startCheckout } from '../services/stripe';
 
 const FEATURES = [
   { emoji: '📋', label: 'Gestion des tâches atelier sans limite' },
@@ -30,16 +31,14 @@ export function SubscriptionScreen() {
   const isPastDue = organization?.billing_status === 'past_due';
 
   async function handleSubscribe() {
+    if (!organization?.id) {
+      return;
+    }
+
     setLoading(true);
-    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
     try {
-      const res = await fetch(`${supabaseUrl}/functions/v1/stripe-checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ organization_id: organization?.id }),
-      });
-      const data = await res.json();
-      if (data.url) await Linking.openURL(data.url);
+      const url = await startCheckout(organization.id);
+      await Linking.openURL(url);
     } catch {
       // ignore
     } finally {
@@ -48,16 +47,14 @@ export function SubscriptionScreen() {
   }
 
   async function handleManage() {
+    if (!organization?.id) {
+      return;
+    }
+
     setLoading(true);
-    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
     try {
-      const res = await fetch(`${supabaseUrl}/functions/v1/stripe-portal`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ organization_id: organization?.id }),
-      });
-      const data = await res.json();
-      if (data.url) await Linking.openURL(data.url);
+      const url = await openPortal(organization.id);
+      await Linking.openURL(url);
     } catch {
       // ignore
     } finally {
