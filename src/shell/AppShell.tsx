@@ -18,17 +18,17 @@ import { EnterpriseScreen } from '../screens/EnterpriseScreen';
 import { DocumentsScreen } from '../screens/DocumentsScreen';
 import { StockScreen } from '../screens/StockScreen';
 import { OrganizationScreen } from '../screens/OrganizationScreen';
-import { SubscriptionScreen } from '../screens/SubscriptionScreen';
 import { AssistantScreen } from '../screens/AssistantScreen';
+import ScanScreen from '../screens/ScanScreen';
 import { LoadingOverlay, ToastBar } from '../components/ui/index';
 import { BillingGuard } from '../components/BillingGuard';
-import { COLORS, SHADOW, RADIUS, SPACING } from '../components/ui/theme';
+import { COLORS, SHADOW, RADIUS } from '../components/ui/theme';
 import { CalendarScreen } from '../screens/CalendarScreen';
 import { StatsScreen } from '../screens/StatsScreen';
 import type { AppScreen } from '../types';
 
 type Tab = {
-  key: Extract<AppScreen, 'home' | 'tasks' | 'calendar' | 'stock' | 'stats' | 'assistant'>;
+  key: Extract<AppScreen, 'home' | 'tasks' | 'calendar' | 'stock' | 'stats' | 'assistant' | 'scanner'>;
   label: string;
   icon: string;
   activeIcon: string;
@@ -38,6 +38,7 @@ const TABS: Tab[] = [
   { key: 'home',     label: 'Accueil',   icon: '🏠', activeIcon: '🏠' },
   { key: 'tasks',    label: 'Tâches',    icon: '📋', activeIcon: '📋' },
   { key: 'assistant',label: 'Assistant', icon: '🤖', activeIcon: '🤖' },
+  { key: 'scanner',  label: 'Scanner',   icon: '📷', activeIcon: '📷' },
   { key: 'calendar', label: 'Agenda',    icon: '📅', activeIcon: '📅' },
   { key: 'stock',    label: 'Stock',     icon: '📦', activeIcon: '📦' },
   { key: 'stats',    label: 'Stats',     icon: '📊', activeIcon: '📊' },
@@ -112,6 +113,11 @@ export function AppShell() {
         {screen === 'assistant' && (
           <BillingGuard organization={organization}>
             <AssistantScreen />
+          </BillingGuard>
+        )}
+        {screen === 'scanner' && (
+          <BillingGuard organization={organization}>
+            <ScanScreen />
           </BillingGuard>
         )}
         {screen === 'calendar' && (
