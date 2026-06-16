@@ -151,6 +151,7 @@ export type AppScreen =
   | 'login'
   | 'home'
   | 'tasks'
+  | 'assistant'
   | 'calendar'
   | 'stock'
   | 'stats'

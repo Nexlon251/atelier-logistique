@@ -19,24 +19,28 @@ import { DocumentsScreen } from '../screens/DocumentsScreen';
 import { StockScreen } from '../screens/StockScreen';
 import { OrganizationScreen } from '../screens/OrganizationScreen';
 import { SubscriptionScreen } from '../screens/SubscriptionScreen';
+import { AssistantScreen } from '../screens/AssistantScreen';
 import { LoadingOverlay, ToastBar } from '../components/ui/index';
 import { BillingGuard } from '../components/BillingGuard';
 import { COLORS, SHADOW, RADIUS, SPACING } from '../components/ui/theme';
+import { CalendarScreen } from '../screens/CalendarScreen';
+import { StatsScreen } from '../screens/StatsScreen';
 import type { AppScreen } from '../types';
 
 type Tab = {
-  key: Extract<AppScreen, 'home' | 'tasks' | 'calendar' | 'stock' | 'stats'>;
+  key: Extract<AppScreen, 'home' | 'tasks' | 'calendar' | 'stock' | 'stats' | 'assistant'>;
   label: string;
   icon: string;
   activeIcon: string;
 };
 
 const TABS: Tab[] = [
-  { key: 'home',     label: 'Accueil', icon: '🏠', activeIcon: '🏠' },
-  { key: 'tasks',    label: 'Tâches',  icon: '📋', activeIcon: '📋' },
-  { key: 'calendar', label: 'Agenda',  icon: '📅', activeIcon: '📅' },
-  { key: 'stock',    label: 'Stock',   icon: '📦', activeIcon: '📦' },
-  { key: 'stats',    label: 'Stats',   icon: '📊', activeIcon: '📊' },
+  { key: 'home',     label: 'Accueil',   icon: '🏠', activeIcon: '🏠' },
+  { key: 'tasks',    label: 'Tâches',    icon: '📋', activeIcon: '📋' },
+  { key: 'assistant',label: 'Assistant', icon: '🤖', activeIcon: '🤖' },
+  { key: 'calendar', label: 'Agenda',    icon: '📅', activeIcon: '📅' },
+  { key: 'stock',    label: 'Stock',     icon: '📦', activeIcon: '📦' },
+  { key: 'stats',    label: 'Stats',     icon: '📊', activeIcon: '📊' },
 ];
 
 const MAIN_SCREENS = TABS.map((t) => t.key) as AppScreen[];
@@ -103,6 +107,11 @@ export function AppShell() {
         {screen === 'stock' && (
           <BillingGuard organization={organization}>
             <StockScreen />
+          </BillingGuard>
+        )}
+        {screen === 'assistant' && (
+          <BillingGuard organization={organization}>
+            <AssistantScreen />
           </BillingGuard>
         )}
         {screen === 'calendar' && (
@@ -226,5 +235,3 @@ const styles = StyleSheet.create({
   },
   badgeText: { color: '#fff', fontSize: 9, fontWeight: '800' },
 });
-import { StatsScreen } from '../screens/StatsScreen';
-import { CalendarScreen } from '../screens/CalendarScreen';

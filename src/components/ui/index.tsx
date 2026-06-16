@@ -9,6 +9,7 @@ import {
   StyleSheet,
   ScrollView,
   Animated,
+  type StyleProp,
   type TextInputProps,
   type ViewStyle,
   type TextStyle,
@@ -111,7 +112,7 @@ const btnStyles = StyleSheet.create({
 
 interface CardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   onPress?: () => void;
   elevated?: boolean;
 }
@@ -185,6 +186,7 @@ interface InputProps extends Omit<TextInputProps, 'style'> {
   error?: string;
   hint?: string;
   containerStyle?: ViewStyle;
+  style?: TextStyle;
   multiline?: boolean;
   numberOfLines?: number;
 }
