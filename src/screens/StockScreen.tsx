@@ -10,8 +10,10 @@ import {
 } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { PartCard, MovementModal, PartForm } from '../components/stock/index';
-import { Button, EmptyState, LoadingOverlay } from '../components/ui/index';
+import { Button, Card, Badge, EmptyState, LoadingOverlay } from '../components/ui/index';
 import { COLORS, RADIUS, SPACING } from '../components/ui/theme';
+import { StockGauge } from '../components/StockGauge';
+import { analyzePredictions, getTopUrgent } from '../utils/stockPrediction';
 import type { Part, PartInput, MovementType } from '../types';
 
 type FilterTab = 'all' | 'alert' | 'ok';
@@ -32,6 +34,7 @@ export function StockScreen() {
     editPart,
     archivePart,
     recordMovement,
+    setScreen,
   } = useApp();
 
   const [tab, setTab] = useState<FilterTab>('all');
@@ -40,6 +43,17 @@ export function StockScreen() {
   const [editingPart, setEditingPart] = useState<Part | null>(null);
   const [movementPart, setMovementPart] = useState<Part | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showAllPredictions, setShowAllPredictions] = useState(false);
+
+  const predictions = useMemo(
+    () => analyzePredictions(parts, movements),
+    [parts, movements]
+  );
+  const topPredictions = useMemo(
+    () => getTopUrgent(predictions),
+    [predictions]
+  );
+  const visiblePredictions = showAllPredictions ? predictions : topPredictions;
 
   const filtered = useMemo(() => {
     let list = parts;
@@ -136,6 +150,55 @@ export function StockScreen() {
             </Text>
           </View>
         </View>
+      )}
+
+      {parts.length > 0 && (
+        <Card style={styles.predictionCard}>
+          <View style={styles.predictionHeader}>
+            <View>
+              <Text style={styles.predictionTitle}>Prévision des ruptures</Text>
+              <Text style={styles.predictionSubtitle}>
+                {predictions.length} pièce{predictions.length > 1 ? 's' : ''} analysée{predictions.length > 1 ? 's' : ''}
+              </Text>
+            </View>
+            {predictions.length > 3 && (
+              <TouchableOpacity onPress={() => setShowAllPredictions((value) => !value)}>
+                <Text style={styles.predictionAction}>
+                  {showAllPredictions ? 'Réduire' : `Voir tout (${predictions.length})`}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {visiblePredictions.map((prediction) => {
+            const badgeProps = {
+              rupture: { label: 'Rupture', color: COLORS.danger, bg: COLORS.dangerLight },
+              critique: { label: 'Urgent', color: COLORS.danger, bg: COLORS.dangerLight },
+              attention: { label: 'Attention', color: COLORS.warning, bg: COLORS.warningLight },
+              stable: { label: 'Stable', color: COLORS.success, bg: COLORS.successLight },
+            }[prediction.urgency];
+
+            return (
+              <View key={prediction.id} style={styles.predictionItem}>
+                <View style={styles.predictionItemHeader}>
+                  <Text style={styles.predictionItemTitle}>{prediction.name}</Text>
+                  <Badge {...badgeProps} size="sm" />
+                </View>
+                <Text style={styles.predictionItemMeta}>
+                  {prediction.quantity} {prediction.unit ?? 'u'} · {prediction.message}
+                </Text>
+                <StockGauge daysRemaining={prediction.daysRemaining} urgency={prediction.urgency} />
+              </View>
+            );
+          })}
+
+          <Button
+            label="Commander via l’assistant"
+            variant="secondary"
+            onPress={() => setScreen('assistant')}
+            style={styles.orderButton}
+          />
+        </Card>
       )}
 
       {/* Search */}
@@ -326,5 +389,62 @@ const styles = StyleSheet.create({
   },
   tabCountActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
   tabCountText: { fontSize: 10, fontWeight: '700', color: COLORS.textMuted },
+  predictionCard: {
+    marginHorizontal: SPACING.xl,
+    marginVertical: SPACING.md,
+    padding: SPACING.lg,
+    borderRadius: RADIUS.xl,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  predictionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  predictionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  predictionSubtitle: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  predictionAction: {
+    color: COLORS.primary,
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  predictionItem: {
+    marginBottom: SPACING.md,
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    backgroundColor: COLORS.surfaceElevated,
+  },
+  predictionItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.xs,
+  },
+  predictionItemTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.text,
+    flex: 1,
+    marginRight: SPACING.sm,
+  },
+  predictionItemMeta: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    marginBottom: SPACING.sm,
+  },
+  orderButton: {
+    marginTop: SPACING.sm,
+  },
   list: { paddingHorizontal: SPACING.xl, paddingBottom: 100 },
 });
