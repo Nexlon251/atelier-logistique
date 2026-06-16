@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "Atelier Logistique",
+    "slug": "atelier-logistique-mobile",
+    "scheme": "atelierlogistique",
+    "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/be45a555-c4c7-4537-9d0a-ec5ed14ae5fc"
+    },
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.atelierlogistique.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "L'application prend des photos des documents papier a classer.",
+        "NSPhotoLibraryUsageDescription": "L'application permet d'importer des photos de documents et de pieces."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.atelierlogistique.mobile",
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "L'application prend des photos des documents papier a classer.",
+          "photosPermission": "L'application importe des photos de documents et de pieces.",
+          "microphonePermission": false
+        }
+      ]
+    ],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "be45a555-c4c7-4537-9d0a-ec5ed14ae5fc"
+      }
+    }
+  }
+}
