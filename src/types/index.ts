@@ -145,6 +145,20 @@ export interface StockMovement {
   created_at: string;
 }
 
+export type AlertType = 'stock_low' | 'task_overdue' | 'movement_anomaly' | 'general';
+export type AlertSeverity = 'critical' | 'attention' | 'info';
+
+export interface AppAlert {
+  id: string;
+  organization_id: string;
+  type: AlertType;
+  severity: AlertSeverity;
+  message: string;
+  entity_id?: string | null;
+  read_at?: string | null;
+  created_at: string;
+}
+
 // ─── App State ──────────────────────────────────────────────────────────────
 
 export type AppScreen =
@@ -153,6 +167,7 @@ export type AppScreen =
   | 'tasks'
   | 'assistant'
   | 'scanner'
+  | 'alerts'
   | 'calendar'
   | 'stock'
   | 'stats'

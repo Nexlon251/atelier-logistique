@@ -19,8 +19,10 @@ import { DocumentsScreen } from '../screens/DocumentsScreen';
 import { StockScreen } from '../screens/StockScreen';
 import { OrganizationScreen } from '../screens/OrganizationScreen';
 import { AssistantScreen } from '../screens/AssistantScreen';
+import { AlertsScreen } from '../screens/AlertsScreen';
 import ScanScreen from '../screens/ScanScreen';
 import { LoadingOverlay, ToastBar } from '../components/ui/index';
+import { AlertsBadge } from '../components/AlertsBadge';
 import { BillingGuard } from '../components/BillingGuard';
 import { COLORS, SHADOW, RADIUS } from '../components/ui/theme';
 import { CalendarScreen } from '../screens/CalendarScreen';
@@ -28,7 +30,7 @@ import { StatsScreen } from '../screens/StatsScreen';
 import type { AppScreen } from '../types';
 
 type Tab = {
-  key: Extract<AppScreen, 'home' | 'tasks' | 'calendar' | 'stock' | 'stats' | 'assistant' | 'scanner'>;
+  key: Extract<AppScreen, 'home' | 'tasks' | 'alerts' | 'calendar' | 'stock' | 'stats' | 'assistant' | 'scanner'>;
   label: string;
   icon: string;
   activeIcon: string;
@@ -37,6 +39,7 @@ type Tab = {
 const TABS: Tab[] = [
   { key: 'home',     label: 'Accueil',   icon: '🏠', activeIcon: '🏠' },
   { key: 'tasks',    label: 'Tâches',    icon: '📋', activeIcon: '📋' },
+  { key: 'alerts',   label: 'Alertes',   icon: '⚠️', activeIcon: '⚠️' },
   { key: 'assistant',label: 'Assistant', icon: '🤖', activeIcon: '🤖' },
   { key: 'scanner',  label: 'Scanner',   icon: '📷', activeIcon: '📷' },
   { key: 'calendar', label: 'Agenda',    icon: '📅', activeIcon: '📅' },
@@ -47,7 +50,7 @@ const TABS: Tab[] = [
 const MAIN_SCREENS = TABS.map((t) => t.key) as AppScreen[];
 
 export function AppShell() {
-  const { screen, setScreen, isLoading, toasts, tasks, parts, organization, isDemo } = useApp();
+  const { screen, setScreen, isLoading, toasts, tasks, parts, alerts, organization, isDemo } = useApp();
 
   if (isLoading) {
     return (
@@ -70,10 +73,12 @@ export function AppShell() {
   // Badge counts for tab bar
   const tasksBadge = tasks.filter((t) => t.status !== 'done').length;
   const stockBadge = parts.filter((p) => p.quantity <= p.alert_threshold).length;
+  const unreadAlerts = organization ? alerts.filter((a) => !a.read_at).length : 0;
 
   function getBadge(key: Tab['key']): number {
     if (key === 'tasks') return tasksBadge;
     if (key === 'stock') return stockBadge;
+    if (key === 'alerts') return unreadAlerts;
     return 0;
   }
 
@@ -113,6 +118,11 @@ export function AppShell() {
         {screen === 'assistant' && (
           <BillingGuard organization={organization}>
             <AssistantScreen />
+          </BillingGuard>
+        )}
+        {screen === 'alerts' && (
+          <BillingGuard organization={organization}>
+            <AlertsScreen />
           </BillingGuard>
         )}
         {screen === 'scanner' && (
@@ -162,7 +172,10 @@ export function AppShell() {
                     <Text style={[styles.tabIcon, active && styles.tabIconActive]}>
                       {tab.icon}
                     </Text>
-                    {badge > 0 && (
+                    {tab.key === 'home' && unreadAlerts > 0 && (
+                      <AlertsBadge count={unreadAlerts} />
+                    )}
+                    {badge > 0 && tab.key !== 'home' && (
                       <View style={styles.badge}>
                         <Text style={styles.badgeText}>
                           {badge > 9 ? '9+' : badge}

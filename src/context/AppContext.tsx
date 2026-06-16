@@ -21,6 +21,7 @@ import {
 import * as taskRepo from '../repository/tasks';
 import * as docRepo from '../repository/documents';
 import * as stockRepo from '../repository/stock';
+import * as alertsRepo from '../repository/alerts';
 import * as orgRepo from '../repository/organizations';
 import type {
   AppUser,
@@ -38,6 +39,7 @@ import type {
   ToastMessage,
   AppScreen,
   Role,
+  AppAlert,
 } from '../types';
 
 // ─── Context shape ───────────────────────────────────────────────────────────
@@ -96,6 +98,12 @@ interface AppContextValue {
     reason?: string,
   ) => Promise<void>;
 
+  // Alerts
+  alerts: AppAlert[];
+  loadingAlerts: boolean;
+  refreshAlerts: () => Promise<void>;
+  markAlertRead: (id: string) => Promise<void>;
+
   // Org admin
   refreshOrganization: () => Promise<void>;
   initOrganization: (org: Organization, mem: Membership) => Promise<void>;
@@ -153,6 +161,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [loadingStock, setLoadingStock] = useState(false);
+  const [alerts, setAlerts] = useState<AppAlert[]>([]);
+  const [loadingAlerts, setLoadingAlerts] = useState(false);
 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -340,6 +350,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       refreshTasksFor(orgId),
       refreshDocumentsFor(orgId),
       refreshStockFor(orgId),
+      refreshAlertsFor(orgId),
     ]);
   }
 
@@ -377,6 +388,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  async function refreshAlertsFor(orgId: string) {
+    setLoadingAlerts(true);
+    try {
+      const data = await alertsRepo.fetchAlerts(orgId);
+      setAlerts(data);
+    } finally {
+      setLoadingAlerts(false);
+    }
+  }
+
   // Persist cache after data changes
   useEffect(() => {
     if (!organization || isDemo) return;
@@ -394,6 +415,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!isDemo) return;
     saveDemoPersistedData({ tasks, documents, parts, movements });
   }, [tasks, documents, parts, movements, isDemo]);
+
+  useEffect(() => {
+    if (!organization || isDemo) return;
+    const sb = getSupabase();
+    refreshAlertsFor(organization.id);
+
+    const channel = sb.channel(`alerts:${organization.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'alerts', filter: `organization_id=eq.${organization.id}` }, (payload) => {
+        setAlerts((prev) => [payload.new as AppAlert, ...prev]);
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'alerts', filter: `organization_id=eq.${organization.id}` }, (payload) => {
+        setAlerts((prev) => prev.map((alert) => (alert.id === (payload.new as AppAlert).id ? (payload.new as AppAlert) : alert)));
+      })
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+      sb.removeChannel(channel);
+    };
+  }, [organization, isDemo, refreshAlertsFor]);
 
   // ── Public refresh functions ──────────────────────────────────────────────
 
@@ -421,6 +462,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       console.error('[refreshOrg]', err);
     }
   }, [isDemo, organization]);
+
+  const refreshAlerts = useCallback(async () => {
+    if (isDemo || !organization) return;
+    await refreshAlertsFor(organization.id);
+  }, [isDemo, organization]);
+
+  const markAlertRead = useCallback(async (id: string) => {
+    if (isDemo) {
+      setAlerts((prev) => prev.map((alert) =>
+        alert.id === id ? { ...alert, read_at: new Date().toISOString() } : alert,
+      ));
+      return;
+    }
+    const updated = await alertsRepo.markAlertRead(id);
+    setAlerts((prev) => prev.map((alert) => (alert.id === updated.id ? updated : alert)));
+  }, [isDemo]);
 
   // ── Task mutations ────────────────────────────────────────────────────────
 
@@ -662,6 +719,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     editPart,
     archivePart,
     recordMovement,
+    alerts,
+    loadingAlerts,
+    refreshAlerts,
+    markAlertRead,
     refreshOrganization,
     initOrganization,
   };
