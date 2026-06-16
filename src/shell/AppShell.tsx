@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useApp } from '../context/AppContext';
+import { useSector } from '../context/SectorContext';
 import { LoginScreen } from '../screens/LoginScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { HomeScreen } from '../screens/HomeScreen';
@@ -20,6 +21,11 @@ import { StockScreen } from '../screens/StockScreen';
 import { OrganizationScreen } from '../screens/OrganizationScreen';
 import { AssistantScreen } from '../screens/AssistantScreen';
 import { AlertsScreen } from '../screens/AlertsScreen';
+import { BTPScreen } from '../screens/BTPScreen';
+import { GarageScreen } from '../screens/GarageScreen';
+import { RestaurationScreen } from '../screens/RestaurationScreen';
+import { TransportScreen } from '../screens/TransportScreen';
+import { IndustrieScreen } from '../screens/IndustrieScreen';
 import ScanScreen from '../screens/ScanScreen';
 import { LoadingOverlay, ToastBar } from '../components/ui/index';
 import { AlertsBadge } from '../components/AlertsBadge';
@@ -27,16 +33,17 @@ import { BillingGuard } from '../components/BillingGuard';
 import { COLORS, SHADOW, RADIUS } from '../components/ui/theme';
 import { CalendarScreen } from '../screens/CalendarScreen';
 import { StatsScreen } from '../screens/StatsScreen';
+import { SECTORS } from '../types';
 import type { AppScreen } from '../types';
 
 type Tab = {
-  key: Extract<AppScreen, 'home' | 'tasks' | 'alerts' | 'calendar' | 'stock' | 'stats' | 'assistant' | 'scanner'>;
+  key: Extract<AppScreen, 'home' | 'tasks' | 'alerts' | 'calendar' | 'stock' | 'stats' | 'assistant' | 'scanner' | 'btp' | 'garage' | 'restauration' | 'transport' | 'industrie'>;
   label: string;
   icon: string;
   activeIcon: string;
 };
 
-const TABS: Tab[] = [
+const BASE_TABS: Tab[] = [
   { key: 'home',     label: 'Accueil',   icon: '🏠', activeIcon: '🏠' },
   { key: 'tasks',    label: 'Tâches',    icon: '📋', activeIcon: '📋' },
   { key: 'alerts',   label: 'Alertes',   icon: '⚠️', activeIcon: '⚠️' },
@@ -47,10 +54,25 @@ const TABS: Tab[] = [
   { key: 'stats',    label: 'Stats',     icon: '📊', activeIcon: '📊' },
 ];
 
-const MAIN_SCREENS = TABS.map((t) => t.key) as AppScreen[];
+const MAIN_SCREENS = [
+  ...BASE_TABS.map((t) => t.key),
+  'btp',
+  'garage',
+  'restauration',
+  'transport',
+  'industrie',
+] as AppScreen[];
 
 export function AppShell() {
   const { screen, setScreen, isLoading, toasts, tasks, parts, alerts, organization, isDemo } = useApp();
+  const { sector } = useSector();
+  const sectorConfig = SECTORS.find((item) => item.id === sector);
+  const tabs = sector !== 'generic' && sectorConfig ? [...BASE_TABS, {
+    key: sector,
+    label: sectorConfig.label,
+    icon: sectorConfig.icon,
+    activeIcon: sectorConfig.icon,
+  }] : BASE_TABS;
 
   if (isLoading) {
     return (
@@ -68,7 +90,7 @@ export function AppShell() {
       organization.billing_status === 'past_due') &&
     screen !== 'organization';
 
-  const showTabs = MAIN_SCREENS.includes(screen) && !billingBlocked;
+  const showTabs = tabs.some((tab) => tab.key === screen) && !billingBlocked;
 
   // Badge counts for tab bar
   const tasksBadge = tasks.filter((t) => t.status !== 'done').length;
@@ -140,6 +162,31 @@ export function AppShell() {
             <StatsScreen />
           </BillingGuard>
         )}
+        {screen === 'btp' && (
+          <BillingGuard organization={organization}>
+            <BTPScreen />
+          </BillingGuard>
+        )}
+        {screen === 'garage' && (
+          <BillingGuard organization={organization}>
+            <GarageScreen />
+          </BillingGuard>
+        )}
+        {screen === 'restauration' && (
+          <BillingGuard organization={organization}>
+            <RestaurationScreen />
+          </BillingGuard>
+        )}
+        {screen === 'transport' && (
+          <BillingGuard organization={organization}>
+            <TransportScreen />
+          </BillingGuard>
+        )}
+        {screen === 'industrie' && (
+          <BillingGuard organization={organization}>
+            <IndustrieScreen />
+          </BillingGuard>
+        )}
         {screen === 'organization' && <OrganizationScreen />}
       </View>
 
@@ -154,7 +201,7 @@ export function AppShell() {
       {showTabs && (
         <SafeAreaView style={styles.tabBarSafe}>
           <View style={[styles.tabBar, SHADOW.lg]}>
-            {TABS.map((tab) => {
+            {tabs.map((tab) => {
               const active = screen === tab.key;
               const badge = getBadge(tab.key);
               return (

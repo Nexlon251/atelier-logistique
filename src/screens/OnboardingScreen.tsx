@@ -6,10 +6,14 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useApp } from '../context/AppContext';
-import { Button, Input } from '../components/ui/index';
+import { useSector } from '../context/SectorContext';
+import { SECTORS, type SectorType } from '../types';
+import { Button, Input, Card } from '../components/ui/index';
+import { AppButton } from '../components/primitives';
 import { COLORS, RADIUS, SPACING, SHADOW } from '../components/ui/theme';
 import * as orgRepo from '../repository/organizations';
 
@@ -20,6 +24,11 @@ const STEPS = [
     subtitle: 'Créez votre espace de travail pour commencer à gérer votre atelier.',
   },
   {
+    emoji: '🧩',
+    title: 'Votre secteur d’activité',
+    subtitle: 'Sélectionnez le secteur qui correspond le mieux à votre organisation.',
+  },
+  {
     emoji: '✅',
     title: 'Tout est prêt.',
     subtitle: 'Votre atelier est configuré. Vous pouvez maintenant gérer vos tâches, documents et stock.',
@@ -28,10 +37,12 @@ const STEPS = [
 
 export function OnboardingScreen() {
   const { user, setScreen, showToast, initOrganization } = useApp();
+  const { setSector } = useSector();
   const [orgName, setOrgName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [done, setDone] = useState(false);
+  const [step, setStep] = useState(0);
+  const [selectedSector, setSelectedSector] = useState<SectorType>('generic');
 
   async function handleCreate() {
     if (!orgName.trim()) {
@@ -44,7 +55,7 @@ export function OnboardingScreen() {
     try {
       const result = await orgRepo.createOrganization(user.id, orgName.trim());
       await initOrganization(result.organization, result.membership);
-      setDone(true);
+      setStep(1);
       showToast('success', `Atelier « ${orgName.trim()} » créé !`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erreur de création');
@@ -53,11 +64,16 @@ export function OnboardingScreen() {
     }
   }
 
-  async function handleContinue() {
+  async function handleConfirmSector() {
+    await setSector(selectedSector);
+    setStep(2);
+  }
+
+  function handleContinue() {
     setScreen('home');
   }
 
-  const step = done ? STEPS[1] : STEPS[0];
+  const currentStep = STEPS[step];
 
   return (
     <KeyboardAvoidingView
@@ -65,56 +81,45 @@ export function OnboardingScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <LinearGradient colors={['#1D4ED8', '#2563EB', '#60A5FA']} style={styles.gradient}>
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Steps indicator */}
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.stepsRow}>
-            {STEPS.map((_, i) => (
+            {STEPS.map((_, index) => (
               <View
-                key={i}
+                key={index}
                 style={[
                   styles.stepDot,
-                  (done ? i <= 1 : i === 0) && styles.stepDotActive,
+                  index <= step && styles.stepDotActive,
                 ]}
               />
             ))}
           </View>
 
-          {/* Emoji */}
           <View style={styles.emojiWrap}>
-            <Text style={styles.emoji}>{step.emoji}</Text>
+            <Text style={styles.emoji}>{currentStep.emoji}</Text>
           </View>
 
-          <Text style={styles.title}>{step.title}</Text>
-          <Text style={styles.subtitle}>{step.subtitle}</Text>
+          <Text style={styles.title}>{currentStep.title}</Text>
+          <Text style={styles.subtitle}>{currentStep.subtitle}</Text>
 
-          {/* Card */}
-          <View style={[styles.card, SHADOW.lg]}>
-            {!done ? (
+          <Card style={[styles.card, SHADOW.lg]}>
+            {step === 0 && (
               <>
                 <Text style={styles.cardTitle}>Nom de votre atelier</Text>
-                <Text style={styles.cardSub}>
-                  Ce nom sera visible de tous vos collaborateurs.
-                </Text>
-
+                <Text style={styles.cardSub}>Ce nom sera visible de tous vos collaborateurs.</Text>
                 {error ? (
                   <View style={styles.errorBox}>
                     <Text style={styles.errorText}>{error}</Text>
                   </View>
                 ) : null}
-
                 <Input
                   label="Nom de l'atelier *"
                   value={orgName}
                   onChangeText={setOrgName}
-                  placeholder="Ex: Garage Dupont & Fils"
+                  placeholder="Ex : Garage Dupont & Fils"
                   returnKeyType="done"
                   onSubmitEditing={handleCreate}
                   autoFocus
                 />
-
                 <Button
                   label="Créer mon atelier"
                   onPress={handleCreate}
@@ -123,39 +128,60 @@ export function OnboardingScreen() {
                   size="lg"
                 />
               </>
-            ) : (
-              <>
-                {/* Features list */}
-                {[
-                  { icon: '📋', label: 'Gestion des tâches atelier' },
-                  { icon: '📄', label: 'Classement des documents' },
-                  { icon: '📦', label: 'Suivi du stock pièces' },
-                  { icon: '👥', label: 'Collaborateurs & rôles' },
-                ].map((f) => (
-                  <View key={f.label} style={styles.featureRow}>
-                    <Text style={styles.featureIcon}>{f.icon}</Text>
-                    <Text style={styles.featureLabel}>{f.label}</Text>
-                    <Text style={styles.featureCheck}>✓</Text>
-                  </View>
-                ))}
+            )}
 
-                <View style={{ height: SPACING.xl }} />
+            {step === 1 && (
+              <>
+                <Text style={styles.cardTitle}>Votre secteur</Text>
+                <Text style={styles.cardSub}>Choisissez le secteur qui correspond le mieux à votre activité.</Text>
+                <View style={styles.sectorGrid}>
+                  {SECTORS.map((sector) => (
+                    <TouchableOpacity
+                      key={sector.id}
+                      style={[
+                        styles.sectorTile,
+                        selectedSector === sector.id && styles.sectorTileActive,
+                      ]}
+                      onPress={() => setSelectedSector(sector.id)}
+                    >
+                      <Text style={styles.sectorIcon}>{sector.icon}</Text>
+                      <Text style={styles.sectorLabel}>{sector.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
                 <Button
-                  label="Accéder à mon atelier →"
-                  onPress={handleContinue}
+                  label="Valider mon secteur"
+                  onPress={handleConfirmSector}
                   fullWidth
                   size="lg"
                 />
               </>
             )}
-          </View>
 
-          {/* Trial info */}
-          {!done && (
+            {step === 2 && (
+              <>
+                <Text style={styles.cardTitle}>Votre atelier est prêt</Text>
+                <Text style={styles.cardSub}>Vous pouvez maintenant commencer à gérer votre stock, vos tâches et vos documents.</Text>
+                <View style={styles.featureRow}>
+                  <Text style={styles.featureIcon}>📋</Text>
+                  <Text style={styles.featureLabel}>Gestion des tâches</Text>
+                </View>
+                <View style={styles.featureRow}>
+                  <Text style={styles.featureIcon}>📄</Text>
+                  <Text style={styles.featureLabel}>Classement des documents</Text>
+                </View>
+                <View style={styles.featureRow}>
+                  <Text style={styles.featureIcon}>📦</Text>
+                  <Text style={styles.featureLabel}>Suivi du stock</Text>
+                </View>
+                <AppButton label="Accéder à mon atelier →" onPress={handleContinue} />
+              </>
+            )}
+          </Card>
+
+          {step < 2 && (
             <View style={styles.trialBadge}>
-              <Text style={styles.trialText}>
-                🎁 Essai gratuit 14 jours · Aucune carte bancaire requise
-              </Text>
+              <Text style={styles.trialText}>🎁 Essai gratuit 14 jours · Aucune carte bancaire requise</Text>
             </View>
           )}
         </ScrollView>
@@ -236,6 +262,36 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderLight,
+  },
+  sectorGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.sm,
+    marginBottom: SPACING.lg,
+  },
+  sectorTile: {
+    width: '48%',
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectorTileActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primaryLight,
+  },
+  sectorIcon: {
+    fontSize: 28,
+    marginBottom: SPACING.sm,
+  },
+  sectorLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.text,
+    textAlign: 'center',
   },
   featureIcon: { fontSize: 20, marginRight: 12 },
   featureLabel: { flex: 1, fontSize: 15, color: COLORS.text, fontWeight: '500' },

@@ -176,8 +176,15 @@ export type AppScreen =
   | 'subscription'
   | 'onboarding'
   | 'enterprise'
-  | 'apikeys';
+  | 'apikeys'
+  | 'btp'
+  | 'garage'
+  | 'restauration'
+  | 'transport'
+  | 'industrie';
 
+export type { SectorType, SectorConfig } from './sectors';
+export { SECTORS } from './sectors';
 
 export interface ToastMessage {
   id: string;
