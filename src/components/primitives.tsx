@@ -1,5 +1,6 @@
 import React, { type ReactNode } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   StyleProp,
   StyleSheet,
@@ -21,6 +22,7 @@ interface AppButtonProps {
   variant?: ButtonVariant;
   compact?: boolean;
   disabled?: boolean;
+  loading?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -30,24 +32,38 @@ export function AppButton({
   variant = 'primary',
   compact = false,
   disabled = false,
+  loading = false,
   style,
 }: AppButtonProps) {
+  const isDisabled = disabled || loading;
+  const spinnerColor = {
+    primary: theme.colors.white,
+    secondary: theme.colors.primary,
+    ghost: theme.colors.text,
+    ghostLight: theme.colors.white,
+    danger: theme.colors.danger,
+  }[variant];
+
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      disabled={disabled}
+      accessibilityState={{ disabled: isDisabled }}
+      disabled={isDisabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.buttonBase,
         compact ? styles.buttonCompact : styles.buttonRegular,
         buttonVariantStyles[variant],
-        disabled ? styles.buttonDisabled : null,
+        isDisabled ? styles.buttonDisabled : null,
         pressed ? styles.buttonPressed : null,
         style,
       ]}
     >
-      <Text style={[styles.buttonLabel, buttonLabelStyles[variant]]}>{label}</Text>
+      {loading ? (
+        <ActivityIndicator color={spinnerColor} />
+      ) : (
+        <Text style={[styles.buttonLabel, buttonLabelStyles[variant]]}>{label}</Text>
+      )}
     </Pressable>
   );
 }
@@ -65,9 +81,10 @@ export function AppCard({
 interface AppFieldProps extends TextInputProps {
   label: string;
   hint?: string;
+  error?: string;
 }
 
-export function AppField({ label, hint, style, ...inputProps }: AppFieldProps) {
+export function AppField({ label, hint, error, style, ...inputProps }: AppFieldProps) {
   return (
     <View style={styles.fieldGroup}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -75,10 +92,14 @@ export function AppField({ label, hint, style, ...inputProps }: AppFieldProps) {
         autoCapitalize="sentences"
         autoCorrect={false}
         placeholderTextColor={theme.colors.textMuted}
-        style={[styles.fieldInput, style]}
+        style={[styles.fieldInput, error ? styles.fieldInputError : null, style]}
         {...inputProps}
       />
-      {hint ? <Text style={styles.fieldHint}>{hint}</Text> : null}
+      {error ? (
+        <Text style={styles.fieldError}>{error}</Text>
+      ) : hint ? (
+        <Text style={styles.fieldHint}>{hint}</Text>
+      ) : null}
     </View>
   );
 }
@@ -293,8 +314,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: theme.typography.bodyFont,
   },
+  fieldInputError: {
+    borderColor: theme.colors.danger,
+  },
   fieldHint: {
     color: theme.colors.textMuted,
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: theme.typography.bodyFont,
+  },
+  fieldError: {
+    color: theme.colors.danger,
     fontSize: 12,
     lineHeight: 18,
     fontFamily: theme.typography.bodyFont,
